@@ -1,6 +1,14 @@
+Framentos de código
+
+# Datos y base de datos local 
 olist.db
 data/
+*.csv 
+
+#Checkpoints y caché de Jupyter/Python
 .ipynb_checkpoints/
 __pycache__/
+
+# Entornos virtuales
 .venv/
 venv/
