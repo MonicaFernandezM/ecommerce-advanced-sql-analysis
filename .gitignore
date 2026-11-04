@@ -1,0 +1,6 @@
+olist.db
+data/
+.ipynb_checkpoints/
+__pycache__/
+.venv/
+venv/
