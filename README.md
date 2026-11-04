@@ -3,7 +3,6 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-Fast%20SQL-FFF000.svg)](https://duckdb.org/)
 [![Matplotlib](https://img.shields.io/badge/Matplotlib-Visuals-11557c.svg)](https://matplotlib.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Descripción
 
@@ -18,16 +17,16 @@ A diferencia de un análisis logístico tradicional centrado únicamente en medi
 
 ## Tabla de Contenidos
 
-- [Descripción](#-descripción)
-- [Dataset](#-dataset)
-- [Preguntas de Investigación](#-preguntas-de-investigación)
-- [Análisis Realizado](#-análisis-realizado)
-- [Resultados y Hallazgos Clave](#-resultados-y-hallazgos-clave)
-- [Conclusiones y Medidas Operativas](#-conclusiones-y-medidas-operativas)
-- [Visualizaciones](#-visualizaciones)
-- [Instalación y Uso](#-instalación-y-uso)
-- [Contribución](#-contribución)
-- [Autor](#-autor)
+- [Descripción](#descripción)
+- [Dataset](#dataset)
+- [Preguntas de Investigación](#preguntas-de-investigación)
+- [Análisis Realizado](#análisis-realizado)
+- [Resultados y Hallazgos Clave](#resultados-y-hallazgos-clave)
+- [Conclusiones y Medidas Operativas](#conclusiones-y-medidas-operativas)
+- [Visualizaciones](#visualizaciones)
+- [Instalación y Uso](#instalación-y-uso)
+- [Contribución](#contribución)
+- [Autor](#autor)
 
 ---
 
