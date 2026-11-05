@@ -18,17 +18,53 @@ A diferencia de un análisis logístico tradicional centrado únicamente en medi
 ## Tabla de Contenidos
 
 - [Descripción](#descripción)
+- [Arquitectura Técnica](#arquitectura-técnica)
 - [Dataset](#dataset)
 - [Análisis y Resultados](#análisis-y-resultados)
-  - [1. Impacto en Satisfacción](#1-impacto-en-satisfacción-el-umbral-crítico-de-los-4-días)
-  - [2. Dependencia Geográfica](#2-geografía-el-70-de-la-oferta-en-são-paulo)
-  - [3. Responsabilidad Operativa](#3-responsabilidad-bodega-agota-el-margen-antes-del-transporte)
-  - [4. Restricciones de Catálogo y Peso](#4-catálogo-el-peso-como-fricción-física)
-  - [5. Análisis de Cohortes y Retención](#5-retención-destrucción-del-customer-lifetime-value-ltv)
+  - [1. Impacto en Satisfacción](#1-impacto-en-satisfacción)
+  - [2. Dependencia Geográfica](#2-dependencia-geográfica)
+  - [3. Responsabilidad Operativa](#3-responsabilidad-operativa)
+  - [4. Restricciones de Catálogo y Peso](#4-restricciones-de-catálogo-y-peso)
+  - [5. Análisis de Cohortes y Retención](#5-análisis-de-cohortes-y-retención)
+  - [6. Modelo Predictivo de Riesgo (Al momento de compra)](#6-modelo-predictivo-de-riesgo-al-momento-de-compra)
 - [Conclusiones y Medidas Operativas](#conclusiones-y-medidas-operativas)
+- [Simulador Interactivo (Streamlit)](#simulador-interactivo-streamlit)
 - [Instalación y Uso](#instalación-y-uso)
 - [Contribución](#contribución)
 - [Autor](#autor)
+
+---
+
+## Arquitectura Técnica
+
+```text
+Proyecto_sql/
+├── data/
+│   ├── olist.db                           # Base de datos en DuckDB
+│   └── modelo_retrasos.pkl                # Modelo RandomForest
+├── img/                                   # Gráficos para el informe
+│   ├── 01_satisfaccion.png
+│   ├── 02_geografia.png
+│   ├── 03_vendedores.png
+│   ├── 04_catalogo.png
+│   ├── 05_retencion.png
+│   ├── 06_impacto_economico.png
+│   ├── 07_factores_retraso.png
+│   └── 07_modelo_evaluacion.png
+├── notebooks/
+│   ├── 01_ecommerce_analytics_duckdb.ipynb # Análisis exploratorio, métricas SQL
+│   └── 02_modelo_predictivo.ipynb          # Balanceo, optimización y umbral de corte
+├── queries/                                # Consultas SQL modulares del análisis
+│   ├── 01_satisfaction_impact.sql
+│   ├── 02_geo_bottlenecks.sql
+│   ├── 03_seller_performance.sql
+│   ├── 04_catalog_complexity.sql
+│   └── 05_customer_retention.sql
+├── app.py                                 # Simulador interactivo en Streamlit
+├── requirements.txt                       # Dependencias del entorno
+├── .gitignore
+└── README.md
+```
 
 ---
 
@@ -50,7 +86,7 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ## Análisis y Resultados
 
-### 1. Impacto en Satisfacción: El umbral crítico de los 4 días
+### 1. Impacto en Satisfacción
 > **Pregunta clave:** *¿Cuánto castiga el cliente un retraso en la valoración final de la plataforma?*
 
 | Estado de entrega | Rating Promedio | % Detractores (1 y 2★) |
@@ -66,7 +102,7 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
-### 2. Geografía: El 70% de la oferta en São Paulo
+### 2. Dependencia Geográfica
 > **Pregunta clave:** *¿Qué regiones de Brasil sufren las peores demoras y cuál es el peso de las rutas interestatales?*
 
 | Tipo de Ruta | Plazo Medio de Entrega | Tasa de Retraso | Concentración de Vendedores |
@@ -81,7 +117,7 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
-### 3. Responsabilidad: Bodega agota el margen antes del transporte
+### 3. Responsabilidad Operativa
 > **Pregunta clave:** *¿El origen del retraso está en el transportista o en vendedores que tardan días en despachar?*
 
 | Tiempo de Despacho del Vendedor | Tasa de Retraso Final | Responsabilidad Directa |
@@ -96,7 +132,7 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
-### 4. Catálogo: El peso como fricción física
+### 4. Restricciones de Catálogo y Peso
 > **Pregunta clave:** *¿Cómo condiciona el peso del paquete a la probabilidad de sufrir demoras?*
 
 | Tramo de Peso | Tiempo Medio de Entrega | Tasa de Retrasos | Categorías de Referencia |
@@ -111,7 +147,7 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
-### 5. Retención: Destrucción del Customer Lifetime Value (LTV)
+### 5. Análisis de Cohortes y Retención
 > **Pregunta clave:** *¿Tener una primera experiencia con retraso destruye la probabilidad de que el cliente vuelva a comprar?*
 
 | Experiencia en 1.er Pedido | Tasa de Recompra Posterior | Impacto en Clientes Recurrentes |
@@ -125,6 +161,26 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
+### 6. Modelo Predictivo de Riesgo (Al momento de compra)
+
+> **Pregunta clave:** *¿Podemos anticipar qué pedidos llegarán fuera de plazo antes de que salgan del almacén?*
+
+Se entrenó un clasificador `RandomForestClassifier` para predecir el riesgo de retraso al momento de confirmarse la orden, empleando variables conocidas antes del despacho: ruta interestatal, peso, volumen y tiempo habitual del vendedor.
+
+| Métrica | Valor Obtenido | Interpretación Operativa |
+| :--- | :---: | :--- |
+| **ROC-AUC** | **0,62** | Capacidad predictiva estable sin sobreajuste |
+| **Umbral Óptimo (Youden)** | **0,5027 (~50%)** | Corte equilibrado entre detección y falsos positivos |
+| **Recall (Captura de retrasos)**| **63,1%** | Detecta casi 2 de cada 3 pedidos con retraso real (~1.100 órdenes) |
+| **FPR (Falsas alarmas)** | **45,8%** | Menos de la mitad de las compras normales se marcan en alerta |
+
+![Evaluación del Modelo](img/07_modelo_evaluacion.png)
+
+- **Factores con mayor impacto:** El historial de despacho del vendedor (**36,3%**) y el trayecto interestatal (**30,6%**) concentran casi el **70% del peso predictivo**, superando al volumen (**17,5%**) y al peso (**15,6%**).
+- **Tratamiento del desbalance:** Se aplicó submuestreo (*Undersampling*) 50/50 exclusivamente sobre el conjunto de entrenamiento, evaluando el desempeño en un set de prueba con la proporción real del negocio (92% a tiempo vs. 8% retrasos).
+
+---
+
 ## Conclusiones y Medidas Operativas
 
 - **Blindaje del primer pedido:** La entrega del primer pedido de un usuario nuevo debe monitorearse como el KPI operativo más crítico de la compañía.
@@ -134,11 +190,17 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
+## Simulador Interactivo (Streamlit)
+
+App Interactiva en proceso 
+
+---
+
 ## Instalación y Uso
 
 ### 1. Clonar el repositorio
 ```bash
-git clone [https://github.com/TU_USUARIO/olist_logistics_retention.git](https://github.com/TU_USUARIO/olist_logistics_retention.git)
+git clone [https://github.com/MonicaFernandezM/ecommerce-advanced-sql-analysis.git](https://github.com/MonicaFernandezM/ecommerce-advanced-sql-analysis.git)
 cd olist_logistics_retention
 ```
 
