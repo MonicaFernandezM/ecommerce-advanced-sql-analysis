@@ -19,11 +19,13 @@ A diferencia de un análisis logístico tradicional centrado únicamente en medi
 
 - [Descripción](#descripción)
 - [Dataset](#dataset)
-- [Preguntas de Investigación](#preguntas-de-investigación)
-- [Análisis Realizado](#análisis-realizado)
-- [Resultados y Hallazgos Clave](#resultados-y-hallazgos-clave)
+- [Análisis y Resultados](#análisis-y-resultados)
+  - [1. Impacto en Satisfacción](#1-impacto-en-satisfacción-el-umbral-crítico-de-los-4-días)
+  - [2. Dependencia Geográfica](#2-geografía-el-70-de-la-oferta-en-são-paulo)
+  - [3. Responsabilidad Operativa](#3-responsabilidad-bodega-agota-el-margen-antes-del-transporte)
+  - [4. Restricciones de Catálogo y Peso](#4-catálogo-el-peso-como-fricción-física)
+  - [5. Análisis de Cohortes y Retención](#5-retención-destrucción-del-customer-lifetime-value-ltv)
 - [Conclusiones y Medidas Operativas](#conclusiones-y-medidas-operativas)
-- [Visualizaciones](#visualizaciones)
 - [Instalación y Uso](#instalación-y-uso)
 - [Contribución](#contribución)
 - [Autor](#autor)
@@ -46,81 +48,89 @@ El proyecto utiliza el dataset público de **Brazilian E-Commerce Real Dataset b
 
 ---
 
-## Preguntas de Investigación
+## Análisis y Resultados
 
-- ¿Cuánto castiga el cliente un retraso en la valoración final de la plataforma?
-- ¿Qué regiones de Brasil sufren las peores demoras y cuál es el peso de las rutas interestatales?
-- ¿El origen del retraso está en el transportista o en vendedores que tardan días en despachar?
-- ¿Cómo condiciona el peso del paquete a la probabilidad de sufrir demoras?
-- ¿Tener una primera experiencia con retraso destruye la probabilidad de que el cliente vuelva a comprar?
+### 1. Impacto en Satisfacción: El umbral crítico de los 4 días
+> **Pregunta clave:** *¿Cuánto castiga el cliente un retraso en la valoración final de la plataforma?*
 
----
+| Estado de entrega | Rating Promedio | % Detractores (1 y 2★) |
+| :--- | :---: | :---: |
+| **A tiempo** | 4,29 | 9,23% |
+| **Con retraso** | 2,57 | 54,03% |
+| **Diferencia / Impacto** | **-1,72** | **+44,80 p.p.** |
 
-## Análisis Realizado
+![Satisfacción del Cliente](img/01_satisfaccion.png)
 
-El proyecto aborda cinco pilares analíticos ejecutados con SQL analítico de alto rendimiento:
-
-1. **Impacto en Satisfacción:** Análisis comparativo de rating promedio y cálculo del porcentaje de detractores (calificaciones de 1 y 2 estrellas) entre entregas a tiempo y fuera de plazo.
-2. **Dependencia Geográfica:** Medición de rutas intrarregionales vs. interestatales y cálculo de tasas de demora por estado de destino (filtrando estados con representatividad $\ge 100$ pedidos).
-3. **Responsabilidad Operativa:** Descomposición del ciclo total de entrega en dos fases: tiempo de empaquetado/despacho del vendedor (`approved_at` $\to$ `carrier_date`) y tiempo de tránsito del transporte (`carrier_date` $\to$ `customer_date`). Detección de vendedores reincidentes mediante `DENSE_RANK()`.
-4. **Restricciones de Catálogo:** Análisis de sensibilidad por tramos de peso (<1 kg, 1-5 kg, 5-10 kg, >10 kg) y clasificación de categorías críticas con mayor tasa de retraso ($\ge 150$ artículos).
-5. **Análisis de Cohortes y Recompra:** Aislamiento cronológico de la primera compra de cada cliente mediante `ROW_NUMBER() OVER(PARTITION BY customer_unique_id ORDER BY purchase_at ASC)` para comparar la retención posterior entre clientes que debutaron puntuales vs. con retraso.
+- **Penalización directa:** Entregar tarde reduce la calificación en 1,72 estrellas y multiplica por casi seis la tasa de detractores.
+- **Tolerancia del usuario:** Entre 1 y 3 días de demora la satisfacción media aguanta en 3,29; sin embargo, al 4.º día colapsa a 2,10 y el 58,5% califica con la nota mínima (1 estrella).
 
 ---
-
-## Resultados y Hallazgos Clave
-
-### 1. Satisfacción: El umbral crítico de los 4 días
-- **Penalización directa:** Entregar a tiempo mantiene una media de **4,29 estrellas**, mientras que un retraso hunde la nota a **2,57 estrellas** (caída de 1,72 estrellas).
-- **Disparo de detractores:** En entregas tardías, las reseñas de 1 y 2 estrellas pasan del **9,23% al 54,03%**.
-- **Tolerancia del usuario:** Entre 1 y 3 días de demora la satisfacción media aguanta en 3,29; sin embargo, al 4º día colapsa a 2,10 y el 58,5% califica con la nota mínima.
 
 ### 2. Geografía: El 70% de la oferta en São Paulo
-- **Concentración extrema:** El **70,77% de los pedidos** parten de vendedores de São Paulo (SP).
-- **Sobrecoste temporal:** Cruzar fronteras estatales duplica el plazo medio de entrega de **7,9 a 15,0 días** y eleva la tasa de retrasos al 9,00%. Estados del Norte y Nordeste como Alagoas (AL), Maranhão (MA) y Sergipe (SE) sufren demoras de entre el 15% y el 24%.
+> **Pregunta clave:** *¿Qué regiones de Brasil sufren las peores demoras y cuál es el peso de las rutas interestatales?*
+
+| Tipo de Ruta | Plazo Medio de Entrega | Tasa de Retraso | Concentración de Vendedores |
+| :--- | :---: | :---: | :---: |
+| **Intraestatal (mismo estado)** | 7,9 días | ~4,5% | 70,77% en São Paulo (SP) |
+| **Interestatal (cruza fronteras)** | 15,0 días | 9,00% | Origen centralizado en SP |
+
+![Geografía y Retraso](img/02_geografia.png)
+
+- **Sobrecoste temporal:** Cruzar fronteras interestatales prácticamente duplica el tiempo de viaje.
+- **Estados críticos:** Estados del Norte y Nordeste como Alagoas (AL), Maranhão (MA) y Sergipe (SE) sufren tasas de demora de entre el 15% y el 24% debido a la distancia de la infraestructura principal.
+
+---
 
 ### 3. Responsabilidad: Bodega agota el margen antes del transporte
-- **Despacho tardío:** El 20% de los envíos retrasados son responsabilidad directa del vendedor. Despachar en menos de 48 horas mantiene los retrasos en un 5,81%; tardar más de 5 días los dispara al **19,67%**.
-- **Sellers críticos:** Existen vendedores con volumen que promedian entre 11 y 18 días únicamente para entregar el bulto al transportista.
+> **Pregunta clave:** *¿El origen del retraso está en el transportista o en vendedores que tardan días en despachar?*
+
+| Tiempo de Despacho del Vendedor | Tasa de Retraso Final | Responsabilidad Directa |
+| :--- | :---: | :---: |
+| **< 48 horas** | 5,81% | Controlada |
+| **> 5 días** | 19,67% | Bodega agota el margen de SLA |
+
+![Vendedores Críticos](img/03_vendedores.png)
+
+- **Despacho tardío:** El 20% de los envíos con retraso se explican directamente por demoras del vendedor antes de entregar el paquete al transportista.
+- **Sellers críticos:** Se detectaron vendedores reincidentes con volumen que promedian entre 11 y 18 días únicamente para despachar el bulto (`approved_at` $\to$ `carrier_date`).
+
+---
 
 ### 4. Catálogo: El peso como fricción física
-- **Efecto peso:** Artículos de más de 10 kg registran **15,3 días de entrega y un 10,61% de retraso**, frente a los artículos de menos de 1 kg (11,9 días y 7,53%).
-- **Líneas críticas:** `office_furniture` promedia **11,34 kg y 20,8 días de viaje**, mientras que `audio` lidera la tasa de entregas tardías con un 12,71%.
+> **Pregunta clave:** *¿Cómo condiciona el peso del paquete a la probabilidad de sufrir demoras?*
+
+| Tramo de Peso | Tiempo Medio de Entrega | Tasa de Retrasos | Categorías de Referencia |
+| :--- | :---: | :---: | :--- |
+| **< 1 kg** | 11,9 días | 7,53% | `telefonia`, `belleza` |
+| **> 10 kg** | 15,3 días | 10,61% | `office_furniture` (11,34 kg / 20,8 días) |
+
+![Catálogo y Peso](img/04_catalogo.png)
+
+- **Efecto peso:** Los artículos pesados (>10 kg) sufren un 41% más de probabilidades de retraso que los paquetes ligeros.
+- **Líneas críticas:** La categoría `office_furniture` combina alto peso medio y tiempos prolongados, mientras que `audio` lidera la tasa total de entregas tardías (12,71%).
+
+---
 
 ### 5. Retención: Destrucción del Customer Lifetime Value (LTV)
-- **Base de recompra reducida:** El 97,00% de los clientes en Olist compra una única vez.
-- **Pérdida por debut tardío:** Los clientes con primera compra puntual tienen una recompra del **3,04%**, frente al **2,51%** de quienes sufrieron un retraso.
-- **Impacto:** Una pérdida relativa del **16,1% en clientes recurrentes** inducida únicamente por la primera experiencia logística.
+> **Pregunta clave:** *¿Tener una primera experiencia con retraso destruye la probabilidad de que el cliente vuelva a comprar?*
 
-> **Insight clave:** *En un modelo donde el 97% de los usuarios nunca regresa, perder casi 1 de cada 6 clientes recurrentes por un fallo en su debut anula por completo la rentabilidad del coste de adquisición publicitario (CAC).*
+| Experiencia en 1.er Pedido | Tasa de Recompra Posterior | Impacto en Clientes Recurrentes |
+| :--- | :---: | :---: |
+| **Entrega puntual** | 3,04% | Base de control |
+| **Entrega con retraso** | 2,51% | **-16,1% de pérdida relativa** |
+
+![Retención de Clientes](img/05_retencion.png)
+
+> **Insight clave:** *En un modelo donde el 97,00% de los usuarios compra solo una vez, perder casi 1 de cada 6 clientes recurrentes por un fallo en su debut anula la rentabilidad del coste de adquisición publicitario (CAC).*
 
 ---
 
 ## Conclusiones y Medidas Operativas
 
 - **Blindaje del primer pedido:** La entrega del primer pedido de un usuario nuevo debe monitorearse como el KPI operativo más crítico de la compañía.
-- **SLA y penalización a vendedores:** Imponer un límite de despacho de 48-72 horas. Penalizar posicionamiento o pausar catálogo a los vendedores reincidentes que agotan el plazo en bodega.
-- **Ajuste de fechas prometidas:** El algoritmo de estimación en el checkout debe parametrizar peso, volumen y distancia real (interestatal). Prometer plazos estándar a un mueble enviado a 2.000 km genera expectativas imposibles de cumplir.
+- **SLA y penalización a vendedores:** Imponer un límite de despacho estricto de 48-72 horas. Penalizar posicionamiento o pausar catálogo a los vendedores reincidentes que agotan el plazo en bodega.
+- **Ajuste de fechas prometidas:** El algoritmo de estimación en el checkout debe parametrizar peso, volumen y distancia real (interestatal). Prometer plazos estándar a un mueble enviado a 2.000 km genera expectativas irreales.
 - **Alerta temprana en el día 3:** La comunicación proactiva y compensación antes del cuarto día de demora es la ventana clave para evitar que el cliente deje una valoración de 1 estrella.
-
----
-
-## Visualizaciones
-
-### Impacto en la Satisfacción del Cliente
-![Satisfacción del Cliente](img/01_satisfaccion.png)
-
-### Top 10 Estados Críticos con Mayor % de Retraso
-![Geografía y Retraso](img/02_geografia.png)
-
-### Vendedores Reincidentes y Días de Despacho
-![Vendedores Críticos](img/03_vendedores.png)
-
-### Categorías Críticas y Peso Promedio
-![Catálogo y Peso](img/04_catalogo.png)
-
-### Impacto del Primer Pedido en la Retención (Cohortes)
-![Retención de Clientes](img/05_retencion.png)
 
 ---
 
@@ -128,14 +138,14 @@ El proyecto aborda cinco pilares analíticos ejecutados con SQL analítico de al
 
 ### 1. Clonar el repositorio
 ```bash
-git clone https://github.com/TU_USUARIO/olist_logistics_retention.git
+git clone [https://github.com/TU_USUARIO/olist_logistics_retention.git](https://github.com/TU_USUARIO/olist_logistics_retention.git)
 cd olist_logistics_retention
 ```
 
-### 2. Crear y activar el entorno virtual
+### 2. Crear y activar entorno virtual
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+source .venv/bin/activate # En windows: .venv\Scripts\activate
 ```
 
 ### 3. Instalar dependencias
@@ -143,25 +153,18 @@ source .venv/bin/activate  # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 4. Ejecutar el Notebook
-```bash
+### 4. Ejecutar el notebook
+``` bash
 jupyter lab notebooks/01_ecommerce_analytics_duckdb.ipynb
 ```
 
----
-
 ## Contribución
-
 Las contribuciones son bienvenidas. Si deseas proponer nuevas métricas o mejoras al análisis:
 1. Haz un fork del repositorio.
-2. Crea una rama para tu feature (`git checkout -b feature/nuevo-analisis`).
+2. Crea una rama para tu feature(`git checkout -b feature/nuevo-analisis`).
 3. Realiza tus cambios y haz commit (`git commit -m 'Añadir análisis adicional'`).
 4. Abre un Pull Request.
 
----
-
-## Autor
-
-**Mónica Fernández**
-
-- **LinkedIn:** [Tu Perfil](https://www.linkedin.com/in/monicamfm)
+## Autor 
+Mónica Fernández
+- **LinkedIn:** [Mónica Fernández](https://www.linkedin.com/in/monicamfm)
